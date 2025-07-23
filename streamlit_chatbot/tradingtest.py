@@ -507,10 +507,20 @@ def trading_ads_tab():
                     st.markdown(f"**Value**: {post['want_value']:,.2f} Sheckles")
             if post["description"]:
                 st.markdown(f"**Description**: {post['description']}")
-            if st.button("Make an Offer", key=f"offer_{post['trade_id']}"):
-                st.session_state.active_chat = post["trade_id"]
-                if post["trade_id"] not in st.session_state.chat_messages:
-                    st.session_state.chat_messages[post["trade_id"]] = []
+            if st.session_state.user_id != post["user_id"]:  # Prevent self-offer
+                if st.button("Make an Offer", key=f"offer_{post['trade_id']}"):
+                    offerer_username = st.text_input("Your Username for this Offer", key=f"offerer_username_{post['trade_id']}")
+                    if offerer_username:
+                        st.session_state.active_chat = post["trade_id"]
+                        if post["trade_id"] not in st.session_state.chat_messages:
+                            st.session_state.chat_messages[post["trade_id"]] = []
+                        # Notify poster of new offer
+                        if "last_message_time" not in st.session_state or st.session_state.get("last_message_time", {}).get(post["trade_id"], 0) < datetime.now().timestamp() - 5:
+                            st.success(f"New offer from {offerer_username} on trade ID {post['trade_id']}!")
+                            st.session_state.last_message_time = st.session_state.get("last_message_time", {})
+                            st.session_state.last_message_time[post["trade_id"]] = datetime.now().timestamp()
+            else:
+                st.write("You cannot make an offer on your own trade.")
             st.markdown('</div>', unsafe_allow_html=True)
 
     # Chat interface for negotiation
@@ -519,9 +529,12 @@ def trading_ads_tab():
         post = next((p for p in st.session_state.trade_posts if p["trade_id"] == trade_id), None)
         if post and post["status"] == "open":
             st.markdown('<div class="chat-card">', unsafe_allow_html=True)
+            offerer_username = st.session_state.chat_messages.get(trade_id, [{}])[0].get("offerer_username") if st.session_state.chat_messages.get(trade_id) else None
             st.subheader(f"Negotiating Trade: {post['username']} - {', '.join(post['trade_items'])} for {', '.join(post['want_items'])}")
+            if offerer_username and st.session_state.user_id == post["user_id"]:
+                st.write(f"Offer from: {offerer_username}")
             for msg in st.session_state.chat_messages.get(trade_id, []):
-                sender = "You" if msg["user_id"] == st.session_state.user_id else post["username"]
+                sender = "You" if msg["user_id"] == st.session_state.user_id else (msg.get("offerer_username") or post["username"])
                 st.markdown(f'<div class="chat-message {'user' if msg['user_id'] == st.session_state.user_id else 'other'}">{sender}: {msg["message"]}</div>', unsafe_allow_html=True)
             with st.form(key=f"chat_form_{trade_id}"):
                 message = st.text_area("Your Message", key=f"message_{trade_id}")
@@ -529,11 +542,15 @@ def trading_ads_tab():
                 with col1:
                     if st.form_submit_button("Send Message"):
                         if message:
+                            offerer_username = st.session_state.chat_messages.get(trade_id, [{}])[0].get("offerer_username") if st.session_state.chat_messages.get(trade_id) else st.session_state.get(f"offerer_username_{trade_id}")
                             st.session_state.chat_messages[trade_id].append({
                                 "user_id": st.session_state.user_id,
+                                "offerer_username": offerer_username,
                                 "message": message,
                                 "timestamp": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                             })
+                            with open(trade_posts_file, "w") as f:  # Save chat to persist
+                                json.dump(st.session_state.trade_posts, f)
                             st.rerun()
                 with col2:
                     if st.form_submit_button("Accept Offer"):
