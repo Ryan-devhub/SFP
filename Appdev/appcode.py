@@ -487,30 +487,34 @@ def get_trade_posts():
     return posts
 
 def get_trade_notifications(user_id):
-    conn = sqlite3.connect("garden_trading.db")
-    c = conn.cursor()
-    c.execute('''SELECT n.notification_id, n.trade_id, u.username, tp.items_offered,
-                 tp.value, tp.description, tp.items_wanted, n.offer_message, n.timestamp
-                 FROM trade_notifications n
-                 JOIN trade_posts tp ON n.trade_id = tp.trade_id
-                 JOIN users u ON n.requestor_id = u.user_id
-                 WHERE tp.user_id = ? AND tp.is_active = 1''', (user_id,))
-    notifications = [
-        {
-            "notification_id": row[0],
-            "trade_id": row[1],
-            "requestor": row[2],
-            "items_offered": row[3].split(","),
-            "value": row[4],
-            "description": row[5],
-            "items_wanted": row[6].split(","),
-            "offer_message": row[7],
-            "timestamp": row[8]
-        }
-        for row in c.fetchall()
-    ]
-    conn.close()
-    return notifications
+    try:
+        conn = sqlite3.connect("garden_trading.db")
+        c = conn.cursor()
+        c.execute('''SELECT n.notification_id, n.trade_id, u.username, tp.items_offered,
+                     tp.value, tp.description, tp.items_wanted, n.offer_message, n.timestamp
+                     FROM trade_notifications n
+                     JOIN trade_posts tp ON n.trade_id = tp.trade_id
+                     JOIN users u ON n.requestor_id = u.user_id
+                     WHERE tp.user_id = ? AND tp.is_active = 1''', (user_id,))
+        notifications = [
+            {
+                "notification_id": row[0],
+                "trade_id": row[1],
+                "requestor": row[2],
+                "items_offered": row[3].split(","),
+                "value": row[4],
+                "description": row[5],
+                "items_wanted": row[6].split(","),
+                "offer_message": row[7],
+                "timestamp": row[8]
+            }
+            for row in c.fetchall()
+        ]
+        conn.close()
+        return notifications
+    except sqlite3.Error as e:
+        st.markdown(f'<div class="error-box">Database error fetching notifications: {str(e)}</div>', unsafe_allow_html=True)
+        return []
 
 def get_trade_history():
     conn = sqlite3.connect("garden_trading.db")
@@ -947,55 +951,61 @@ with tabs[1]:
             st.write("No trade posts available.")
         st.markdown('</div>', unsafe_allow_html=True)
 
-    with tabs_trade[2]:
+with tabs_trade[2]:
         st.markdown('<div class="trade-card">', unsafe_allow_html=True)
         st.subheader("Trade Notifications")
         user = st.session_state.get("username", "")
-        user_id = get_user_id(user) if user else 0
-        user_notifications = get_trade_notifications(user_id)
+        if user:
+            user_id = get_user_id(user)
+            user_notifications = get_trade_notifications(user_id)
 
-        if user_notifications:
-            for notification in user_notifications:
-                with st.expander(f"Offer from {notification['requestor']} for Trade {notification['trade_id']}"):
-                    st.markdown('<div class="trade-box">', unsafe_allow_html=True)
-                    st.write(f"Items Offered: {', '.join(notification['items_offered'])}")
-                    if notification["value"]:
-                        st.write(f"Value: {notification['value']:,.2f} Sheckles")
-                    if notification["description"]:
-                        st.write(f"Description: {notification['description']}")
-                    st.write(f"Items Wanted: {', '.join(notification['items_wanted'])}")
-                    st.write(f"Offer Message: {notification['offer_message']}")
-                    st.write(f"Received: {notification['timestamp']}")
-                    st.markdown('</div>', unsafe_allow_html=True)
+            if user_notifications:
+                for notification in user_notifications:
+                    with st.expander(f"Offer from {notification['requestor']} for Trade {notification['trade_id']}"):
+                        st.markdown('<div class="trade-box">', unsafe_allow_html=True)
+                        st.write(f"**Trade ID**: {notification['trade_id']}")
+                        st.write(f"**Items Offered**: {', '.join(notification['items_offered'])}")
+                        if notification["value"]:
+                            st.write(f"**Value**: {notification['value']:,.2f} Sheckles")
+                        if notification["description"]:
+                            st.write(f"**Description**: {notification['description']}")
+                        st.write(f"**Items Wanted**: {', '.join(notification['items_wanted'])}")
+                        st.write(f"**Offer Message**: {notification['offer_message']}")
+                        st.write(f"**Received**: {notification['timestamp']}")
+                        st.markdown('</div>', unsafe_allow_html=True)
 
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        if st.button("Accept", key=f"accept_notification_{notification['notification_id']}"):
-                            conn = sqlite3.connect("garden_trading.db")
-                            c = conn.cursor()
-                            c.execute('''INSERT INTO trade_chats (trade_id, user_id, message, timestamp)
-                                         VALUES (?, ?, ?, ?)''',
-                                      (notification["trade_id"], get_user_id(notification["requestor"]),
-                                       f"{notification['requestor']}: {notification['offer_message']}",
-                                       notification["timestamp"]))
-                            c.execute("DELETE FROM trade_notifications WHERE notification_id = ?",
-                                      (notification["notification_id"],))
-                            conn.commit()
-                            conn.close()
-                            st.markdown(f'<div class="success-box">Trade request accepted! Chat opened in Trading Chat.</div>', unsafe_allow_html=True)
-                            st.rerun()
-                    with col2:
-                        if st.button("Reject", key=f"reject_notification_{notification['notification_id']}"):
-                            conn = sqlite3.connect("garden_trading.db")
-                            c = conn.cursor()
-                            c.execute("DELETE FROM trade_notifications WHERE notification_id = ?",
-                                      (notification["notification_id"],))
-                            conn.commit()
-                            conn.close()
-                            st.markdown(f'<div class="success-box">Trade request rejected.</div>', unsafe_allow_html=True)
-                            st.rerun()
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            if st.button("Accept", key=f"accept_notification_{notification['notification_id']}"):
+                                conn = sqlite3.connect("garden_trading.db")
+                                c = conn.cursor()
+                                # Insert initial offer message into trade_chats
+                                c.execute('''INSERT INTO trade_chats (trade_id, user_id, message, timestamp)
+                                             VALUES (?, ?, ?, ?)''',
+                                          (notification["trade_id"], get_user_id(notification["requestor"]),
+                                           f"{notification['requestor']}: {notification['offer_message']}",
+                                           notification["timestamp"]))
+                                # Delete the notification after accepting
+                                c.execute("DELETE FROM trade_notifications WHERE notification_id = ?",
+                                          (notification["notification_id"],))
+                                conn.commit()
+                                conn.close()
+                                st.markdown(f'<div class="success-box">Trade request accepted! Chat opened in Trading Chat for Trade {notification["trade_id"]}.</div>', unsafe_allow_html=True)
+                                st.rerun()
+                        with col2:
+                            if st.button("Reject", key=f"reject_notification_{notification['notification_id']}"):
+                                conn = sqlite3.connect("garden_trading.db")
+                                c = conn.cursor()
+                                c.execute("DELETE FROM trade_notifications WHERE notification_id = ?",
+                                          (notification["notification_id"],))
+                                conn.commit()
+                                conn.close()
+                                st.markdown(f'<div class="success-box">Trade request rejected.</div>', unsafe_allow_html=True)
+                                st.rerun()
+            else:
+                st.write("No trade notifications available.")
         else:
-            st.write("No trade notifications.")
+            st.markdown('<div class="error-box">Please enter a username in the Create Trade tab to view notifications.</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
     with tabs_trade[3]:
