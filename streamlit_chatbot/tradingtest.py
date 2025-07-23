@@ -412,14 +412,20 @@ def load_trades():
             st.session_state.trades = {}
             for line in f:
                 if line.strip():
-                    trade_data = json.loads(line.strip())
-                    trade_id = trade_data.pop("trade_id")
-                    st.session_state.trades[trade_id] = trade_data
+                    try:
+                        trade_data = json.loads(line.strip())
+                        trade_id = trade_data.pop("trade_id")
+                        st.session_state.trades[trade_id] = trade_data
+                    except json.JSONDecodeError:
+                        st.warning(f"Skipping malformed trade data in line: {line.strip()}")
             # Update counters based on loaded trades
             st.session_state.trade_counter = max(st.session_state.trades.keys(), default=-1) + 1
-            st.session_state.offer_counter = max(
-                [max(t["offers"].keys(), default=-1) for t in st.session_state.trades.values()] + [-1]
-            ) + 1
+            # Safely compute offer_counter
+            all_offer_ids = []
+            for trade in st.session_state.trades.values():
+                if "offers" in trade and trade["offers"]:
+                    all_offer_ids.extend([int(k) for k in trade["offers"].keys() if k.isdigit()])
+            st.session_state.offer_counter = max(all_offer_ids, default=-1) + 1
 
 # Load trades on startup
 load_trades()
