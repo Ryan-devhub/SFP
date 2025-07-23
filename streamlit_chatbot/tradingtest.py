@@ -109,49 +109,11 @@ st.markdown(
         background-color: rgba(187, 222, 251, 0.9);
         text-align: left;
     }
-    .chat-card.accepted {
-        background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
-    }
-    .sidebar {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 250px;
-        height: 100%;
-        background-color: rgba(255, 255, 255, 0.9);
-        padding: 20px;
-        box-shadow: 2px 0 5px rgba(0,0,0,0.1);
-        overflow-y: auto;
-        transition: transform 0.3s ease-in-out;
-    }
-    .sidebar.collapsed {
-        transform: translateX(-250px);
-    }
-    .sidebar-toggle {
-        position: absolute;
-        top: 10px;
-        right: -40px;
-        background-color: #4CAF50;
-        color: white;
-        border: none;
-        border-radius: 0 5px 5px 0;
-        padding: 5px 10px;
-        cursor: pointer;
-        transition: background-color 0.3s;
-    }
-    .sidebar-toggle:hover {
-        background-color: #45a049;
-    }
-    .sidebar h3 {
-        color: #2c3e50;
-        font-size: 1.5em;
-        margin-bottom: 15px;
-    }
     </style>
     <script>
     function toggleSidebar() {
         const sidebar = document.querySelector('.sidebar');
-        sidebar.classList.toggle('collapsed');
+        sidebar.classList.toggle('active');
     }
     </script>
     """,
@@ -319,10 +281,6 @@ if 'user_id' not in st.session_state:
     st.session_state.user_id = "User_" + str(hash(datetime.now()))[:8]
 if 'chat_history' not in st.session_state:
     st.session_state.chat_history = []
-if 'trade_notifications' not in st.session_state:
-    st.session_state.trade_notifications = {}
-if 'sidebar_collapsed' not in st.session_state:
-    st.session_state.sidebar_collapsed = False
 
 # Configure Gemini API
 GOOGLE_API_KEY = "AIzaSyAsut5nuxR7w-LrfqhMePB3Q26n3jmtixc"  # Replace with your API key
@@ -549,55 +507,21 @@ def trading_ads_tab():
                     st.markdown(f"**Value**: {post['want_value']:,.2f} Sheckles")
             if post["description"]:
                 st.markdown(f"**Description**: {post['description']}")
-            if st.session_state.user_id != post["user_id"]:  # Prevent self-offer
-                if st.button("Make an Offer", key=f"offer_{post['trade_id']}"):
-                    offerer_username = st.text_input("Your Username for this Offer", key=f"offerer_username_{post['trade_id']}")
-                    if offerer_username:
-                        # Store notification for the trade poster
-                        if post["user_id"] not in st.session_state.trade_notifications:
-                            st.session_state.trade_notifications[post["user_id"]] = {}
-                        st.session_state.trade_notifications[post["user_id"]][post["trade_id"]] = offerer_username
-                        st.session_state.active_chat = None  # Reset active chat to show sidebar
-                        with open(trade_posts_file, "w") as f:
-                            json.dump(st.session_state.trade_posts, f)
-                        st.success(f"Trade request sent to {post['username']}!")
-            else:
-                st.write("You cannot make an offer on your own trade.")
+            if st.button("Make an Offer", key=f"offer_{post['trade_id']}"):
+                st.session_state.active_chat = post["trade_id"]
+                if post["trade_id"] not in st.session_state.chat_messages:
+                    st.session_state.chat_messages[post["trade_id"]] = []
             st.markdown('</div>', unsafe_allow_html=True)
-
-    # Sidebar for trade notifications
-    sidebar_class = "sidebar" if not st.session_state.sidebar_collapsed else "sidebar collapsed"
-    st.markdown(f'<div class="{sidebar_class}">', unsafe_allow_html=True)
-    st.markdown('<h3>Trade Notifications</h3>', unsafe_allow_html=True)
-    st.markdown('<button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>', unsafe_allow_html=True)
-    user_notifications = st.session_state.trade_notifications.get(st.session_state.user_id, {})
-    for trade_id, offerer_username in user_notifications.items():
-        post = next((p for p in st.session_state.trade_posts if p["trade_id"] == trade_id), None)
-        if post and post["status"] == "open":
-            if st.button(f"Start a Chat with {offerer_username} (Trade ID: {trade_id})", key=f"chat_{trade_id}"):
-                st.session_state.active_chat = trade_id
-                if trade_id not in st.session_state.chat_messages:
-                    st.session_state.chat_messages[trade_id] = []
-                # Remove notification after starting chat
-                if st.session_state.user_id in st.session_state.trade_notifications and trade_id in st.session_state.trade_notifications[st.session_state.user_id]:
-                    del st.session_state.trade_notifications[st.session_state.user_id][trade_id]
-                    with open(trade_posts_file, "w") as f:
-                        json.dump(st.session_state.trade_posts, f)
-    st.markdown('</div>', unsafe_allow_html=True)
 
     # Chat interface for negotiation
     if st.session_state.active_chat is not None:
         trade_id = st.session_state.active_chat
         post = next((p for p in st.session_state.trade_posts if p["trade_id"] == trade_id), None)
         if post and post["status"] == "open":
-            chat_class = "chat-card accepted" if st.session_state.chat_messages.get(trade_id, [{}])[0].get("accepted", False) else "chat-card"
-            st.markdown(f'<div class="{chat_class}">', unsafe_allow_html=True)
-            offerer_username = st.session_state.chat_messages.get(trade_id, [{}])[0].get("offerer_username")
+            st.markdown('<div class="chat-card">', unsafe_allow_html=True)
             st.subheader(f"Negotiating Trade: {post['username']} - {', '.join(post['trade_items'])} for {', '.join(post['want_items'])}")
-            if offerer_username and st.session_state.user_id == post["user_id"]:
-                st.write(f"Offer from: {offerer_username}")
             for msg in st.session_state.chat_messages.get(trade_id, []):
-                sender = "You" if msg["user_id"] == st.session_state.user_id else (msg.get("offerer_username") or post["username"])
+                sender = "You" if msg["user_id"] == st.session_state.user_id else post["username"]
                 st.markdown(f'<div class="chat-message {'user' if msg['user_id'] == st.session_state.user_id else 'other'}">{sender}: {msg["message"]}</div>', unsafe_allow_html=True)
             with st.form(key=f"chat_form_{trade_id}"):
                 message = st.text_area("Your Message", key=f"message_{trade_id}")
@@ -605,37 +529,28 @@ def trading_ads_tab():
                 with col1:
                     if st.form_submit_button("Send Message"):
                         if message:
-                            offerer_username = st.session_state.chat_messages.get(trade_id, [{}])[0].get("offerer_username") if st.session_state.chat_messages.get(trade_id) else st.session_state.get(f"offerer_username_{trade_id}")
                             st.session_state.chat_messages[trade_id].append({
                                 "user_id": st.session_state.user_id,
-                                "offerer_username": offerer_username,
                                 "message": message,
                                 "timestamp": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                             })
-                            with open(trade_posts_file, "w") as f:
-                                json.dump(st.session_state.trade_posts, f)
                             st.rerun()
                 with col2:
                     if st.form_submit_button("Accept Offer"):
-                        if trade_id in st.session_state.chat_messages:
-                            st.session_state.chat_messages[trade_id][0]["accepted"] = st.session_state.chat_messages[trade_id][0].get("accepted", False) or {}
-                            st.session_state.chat_messages[trade_id][0]["accepted"][st.session_state.user_id] = True
-                            if all(st.session_state.chat_messages[trade_id][0]["accepted"].get(uid, False) for uid in [post["user_id"], next((msg["user_id"] for msg in st.session_state.chat_messages[trade_id] if msg.get("offerer_username")), None)]):
-                                post["status"] = "accepted"
-                                with open(trade_posts_file, "w") as f:
-                                    json.dump(st.session_state.trade_posts, f)
-                                st.success("Trade accepted and saved!")
-                            st.rerun()
+                        post["status"] = "accepted"
+                        with open(trade_posts_file, "w") as f:
+                            json.dump(st.session_state.trade_posts, f)
+                        st.session_state.active_chat = None
+                        st.success("Trade accepted!")
+                        st.rerun()
                 with col3:
-                    if st.form_submit_button("Decline Offer"):
-                        if trade_id in st.session_state.chat_messages:
-                            del st.session_state.chat_messages[trade_id]
-                            post["status"] = "rejected"
-                            with open(trade_posts_file, "w") as f:
-                                json.dump(st.session_state.trade_posts, f)
-                            st.session_state.active_chat = None
-                            st.error("Trade declined and chat terminated.")
-                            st.rerun()
+                    if st.form_submit_button("Reject Offer"):
+                        post["status"] = "rejected"
+                        with open(trade_posts_file, "w") as f:
+                            json.dump(st.session_state.trade_posts, f)
+                        st.session_state.active_chat = None
+                        st.error("Trade rejected.")
+                        st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
 
     # Save trade posts to file on session end or change
