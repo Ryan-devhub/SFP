@@ -313,6 +313,7 @@ def add_trade(poster, items, value, description, wanted_items):
         "offers": {},  # offer_id -> offer dict
         "status": "open",  # open, accepted, declined
     }
+    save_trades()  # Save after adding trade
     return trade_id
 
 def add_offer(trade_id, from_user, message):
@@ -330,8 +331,6 @@ def add_offer(trade_id, from_user, message):
         "status": "pending",  # pending, accepted, rejected, terminated
     }
     st.session_state.trades[trade_id]["offers"][offer_id] = offer
-
-    # Add notification for the poster
     poster = st.session_state.trades[trade_id]["poster"]
     if poster not in st.session_state.notifications:
         st.session_state.notifications[poster] = {}
@@ -347,6 +346,7 @@ def add_offer(trade_id, from_user, message):
         "accept_confirmed": {from_user: False, poster: False},
         "status": "pending",
     }
+    save_trades()  # Save after adding offer
 
 def add_chat_message(trade_id, offer_id, sender, message):
     chat_entry = {
@@ -360,6 +360,7 @@ def add_chat_message(trade_id, offer_id, sender, message):
     poster = st.session_state.trades[trade_id]["poster"]
     if poster in st.session_state.notifications and offer_id in st.session_state.notifications[poster]:
         st.session_state.notifications[poster][offer_id]["chat_log"].append(chat_entry)
+    save_trades()  # Save after adding chat message
 
 def end_chat(trade_id, offer_id, rejected=True):
     # Mark offer and trade as rejected or terminated
@@ -367,6 +368,7 @@ def end_chat(trade_id, offer_id, rejected=True):
     poster = st.session_state.trades[trade_id]["poster"]
     if poster in st.session_state.notifications and offer_id in st.session_state.notifications[poster]:
         st.session_state.notifications[poster][offer_id]["status"] = "rejected" if rejected else "terminated"
+    save_trades()  # Save after ending chat
 
 def save_trade_history(trade_id, offer_id):
     trade = st.session_state.trades[trade_id]
@@ -392,10 +394,35 @@ def save_trade_history(trade_id, offer_id):
     poster = trade["poster"]
     if poster in st.session_state.notifications and offer_id in st.session_state.notifications[poster]:
         del st.session_state.notifications[poster][offer_id]
+    save_trades()  # Save after saving trade history
 
 def clear_notification(poster, offer_id):
     if poster in st.session_state.notifications and offer_id in st.session_state.notifications[poster]:
         del st.session_state.notifications[poster][offer_id]
+    save_trades()  # Save after clearing notification
+
+def save_trades():
+    with open("trades.txt", "w") as f:
+        for trade_id, trade in st.session_state.trades.items():
+            f.write(json.dumps({"trade_id": trade_id, **trade}) + "\n")
+
+def load_trades():
+    if os.path.exists("trades.txt"):
+        with open("trades.txt", "r") as f:
+            st.session_state.trades = {}
+            for line in f:
+                if line.strip():
+                    trade_data = json.loads(line.strip())
+                    trade_id = trade_data.pop("trade_id")
+                    st.session_state.trades[trade_id] = trade_data
+            # Update counters based on loaded trades
+            st.session_state.trade_counter = max(st.session_state.trades.keys(), default=-1) + 1
+            st.session_state.offer_counter = max(
+                [max(t["offers"].keys(), default=-1) for t in st.session_state.trades.values()] + [-1]
+            ) + 1
+
+# Load trades on startup
+load_trades()
 
 # Value Calculator Tab
 def value_calculator_tab():
