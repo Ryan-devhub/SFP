@@ -347,6 +347,7 @@ def add_offer(trade_id, from_user, message):
         "status": "pending",
     }
     save_trades()  # Save after adding offer
+    st.rerun()  # Force re-run to update UI with notifications
 
 def add_chat_message(trade_id, offer_id, sender, message):
     chat_entry = {
@@ -617,10 +618,7 @@ def trading_ads_tab():
             else:
                 trade_id = add_trade(current_user, selected_trade_items, trade_value, trade_description, wanted_items)
                 st.success(f"Trade posted successfully! Trade ID: {trade_id}")
-
-                # Clear inputs by rerunning:
-                import streamlit.runtime.scriptrunner as scriptrunner
-                raise scriptrunner.RerunException(scriptrunner.RerunData())
+                st.rerun()  # Force re-run to refresh UI
 
     # ----------- TRADES FEED TAB -----------
     with tabs[1]:
@@ -658,31 +656,27 @@ def trading_ads_tab():
                         if st.button("Make an Offer", key=offer_key):
                             st.session_state[f"offer_modal_{trade_id}"] = True
 
-                        # Show offer modal
+                        # Show offer modal within a form
                         if st.session_state.get(f"offer_modal_{trade_id}", False):
-                            st.markdown("---")
-                            st.markdown(f"**Make an offer on trade {trade_id}**")
-                            offer_username = st.text_input("Your username", value=current_user, key=f"offer_username_{trade_id}")
-                            offer_message = st.text_area("Message", key=f"offer_message_{trade_id}")
-                            col1, col2 = st.columns(2)
-                            with col1:
-                                if st.button("Send Offer", key=f"send_offer_{trade_id}"):
-                                    if not offer_username.strip():
-                                        st.error("Please enter your username.")
-                                    elif not offer_message.strip():
-                                        st.error("Please enter a message.")
-                                    else:
-                                        add_offer(trade_id, offer_username.strip(), offer_message.strip())
-                                        st.success("Offer sent!")
+                            with st.form(key=f"offer_form_{trade_id}"):
+                                st.markdown(f"**Make an offer on trade {trade_id}**")
+                                offer_username = st.text_input("Your username", value=current_user, key=f"offer_username_{trade_id}")
+                                offer_message = st.text_area("Message", key=f"offer_message_{trade_id}")
+                                col1, col2 = st.columns(2)
+                                with col1:
+                                    if st.form_submit_button("Send Offer"):
+                                        if not offer_username.strip():
+                                            st.error("Please enter your username.")
+                                        elif not offer_message.strip():
+                                            st.error("Please enter a message.")
+                                        else:
+                                            add_offer(trade_id, offer_username.strip(), offer_message.strip())
+                                            st.success("Offer sent!")
+                                            st.session_state[f"offer_modal_{trade_id}"] = False
+                                with col2:
+                                    if st.form_submit_button("Cancel"):
                                         st.session_state[f"offer_modal_{trade_id}"] = False
-                                        # Clear inputs
-                                        st.session_state[f"offer_username_{trade_id}"] = ""
-                                        st.session_state[f"offer_message_{trade_id}"] = ""
-                            with col2:
-                                if st.button("Cancel", key=f"cancel_offer_{trade_id}"):
-                                    st.session_state[f"offer_modal_{trade_id}"] = False
-                                    st.session_state[f"offer_username_{trade_id}"] = ""
-                                    st.session_state[f"offer_message_{trade_id}"] = ""
+                                st.form_submit_button("Close")  # Additional close option
 
                     elif poster == current_user:
                         if status == "open":
@@ -724,6 +718,7 @@ def trading_ads_tab():
                                 st.session_state.trades[trade_id]["offers"][offer_id]["accepted"] = True
                                 st.session_state.trades[trade_id]["offers"][offer_id]["chat_started"] = True
                                 notif["status"] = "accepted"
+                                save_trades()  # Save after updating status
                         with col2:
                             if st.button(f"Reject Offer {offer_id}"):
                                 notif["rejected"] = True
@@ -731,6 +726,7 @@ def trading_ads_tab():
                                 # Mark offer rejected in trade data too
                                 st.session_state.trades[trade_id]["offers"][offer_id]["status"] = "rejected"
                                 to_remove.append(offer_id)
+                                save_trades()  # Save after updating status
                         with col3:
                             if st.button(f"Close Notification {offer_id}"):
                                 to_remove.append(offer_id)
@@ -755,7 +751,7 @@ def trading_ads_tab():
                         if st.button(f"Send Message (Offer {offer_id})"):
                             if new_msg.strip():
                                 add_chat_message(trade_id, offer_id, current_user, new_msg.strip())
-                                st.experimental_rerun()
+                                st.rerun()
                             else:
                                 st.warning("Enter a message to send.")
 
@@ -770,7 +766,7 @@ def trading_ads_tab():
                                     save_trade_history(trade_id, offer_id)
                                     st.success("Trade completed and saved to trade history.")
                                     to_remove.append(offer_id)
-                                    st.experimental_rerun()
+                                    st.rerun()
                                 else:
                                     st.info("Waiting for the other user to accept.")
 
@@ -779,7 +775,7 @@ def trading_ads_tab():
                                 end_chat(trade_id, offer_id, rejected=True)
                                 st.error("Trade rejected and chat terminated.")
                                 to_remove.append(offer_id)
-                                st.experimental_rerun()
+                                st.rerun()
 
                 elif status == "rejected":
                     st.error(f"Offer {offer_id} was rejected or trade terminated.")
