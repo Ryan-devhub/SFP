@@ -5,7 +5,7 @@ import os
 import random
 import time
 import google.generativeai as genai
-import sqlite3  # Added for database
+import sqlite3
 
 # Set page configuration
 st.set_page_config(
@@ -172,7 +172,7 @@ st.markdown("""
         background-color: rgba(200, 230, 201, 0.9);
         padding: 10px;
         border-radius: 8px;
-        color: #2e7d32;
+        color: «color»;
         margin-top: 10px;
     }
     .error-box {
@@ -341,7 +341,7 @@ trade_items = [
 # Flower types (unchanged)
 flower_types = ["🌸 Rose", "🌼 Daisy", "🌺 Tulip"]
 
-# Initialize session state (removed trade-related variables)
+# Initialize session state (unchanged)
 if 'sidebar_open' not in st.session_state:
     st.session_state.sidebar_open = True
 if 'recent_searches' not in st.session_state:
@@ -386,7 +386,7 @@ if 'game_state' not in st.session_state:
 if 'leaderboard' not in st.session_state:
     st.session_state.leaderboard = []
 
-# Database initialization
+# Database initialization (unchanged)
 def init_db():
     conn = sqlite3.connect("garden_trading.db")
     c = conn.cursor()
@@ -487,30 +487,34 @@ def get_trade_posts():
     return posts
 
 def get_trade_notifications(user_id):
-    conn = sqlite3.connect("garden_trading.db")
-    c = conn.cursor()
-    c.execute('''SELECT n.notification_id, n.trade_id, u.username, tp.items_offered,
-                 tp.value, tp.description, tp.items_wanted, n.offer_message, n.timestamp
-                 FROM trade_notifications n
-                 JOIN trade_posts tp ON n.trade_id = tp.trade_id
-                 JOIN users u ON n.requestor_id = u.user_id
-                 WHERE tp.user_id = ? AND tp.is_active = 1''', (user_id,))
-    notifications = [
-        {
-            "notification_id": row[0],
-            "trade_id": row[1],
-            "requestor": row[2],
-            "items_offered": row[3].split(","),
-            "value": row[4],
-            "description": row[5],
-            "items_wanted": row[6].split(","),
-            "offer_message": row[7],
-            "timestamp": row[8]
-        }
-        for row in c.fetchall()
-    ]
-    conn.close()
-    return notifications
+    try:
+        conn = sqlite3.connect("garden_trading.db")
+        c = conn.cursor()
+        c.execute('''SELECT n.notification_id, n.trade_id, u.username, tp.items_offered,
+                     tp.value, tp.description, tp.items_wanted, n.offer_message, n.timestamp
+                     FROM trade_notifications n
+                     JOIN trade_posts tp ON n.trade_id = tp.trade_id
+                     JOIN users u ON n.requestor_id = u.user_id
+                     WHERE tp.user_id = ? AND tp.is_active = 1''', (user_id,))
+        notifications = [
+            {
+                "notification_id": row[0],
+                "trade_id": row[1],
+                "requestor": row[2],
+                "items_offered": row[3].split(","),
+                "value": row[4],
+                "description": row[5],
+                "items_wanted": row[6].split(","),
+                "offer_message": row[7],
+                "timestamp": row[8]
+            }
+            for row in c.fetchall()
+        ]
+        conn.close()
+        return notifications
+    except sqlite3.Error as e:
+        st.markdown(f'<div class="error-box">Database error fetching notifications: {str(e)}</div>', unsafe_allow_html=True)
+        return []
 
 def get_trade_history():
     conn = sqlite3.connect("garden_trading.db")
@@ -560,7 +564,7 @@ def get_trade_chats(trade_id):
     conn.close()
     return chats
 
-# Sidebar (updated Trading Chat section)
+# Sidebar (unchanged)
 with st.sidebar:
     st.markdown("<h2 style='text-align: center; color: #ffffff; text-shadow: 1px 1px 3px rgba(0,0,0,0.2);'>Garden Toolshed</h2>", unsafe_allow_html=True)
     if st.button("Toggle Toolshed"):
@@ -845,7 +849,7 @@ with tabs[0]:
     
     st.markdown('</div>', unsafe_allow_html=True)
 
-# Trading Ads Tab (updated with SQLite)
+# Trading Ads Tab
 with tabs[1]:
     st.markdown('<div class="main">', unsafe_allow_html=True)
     st.title("📬 Grow a Garden Trading Ads")
@@ -951,51 +955,55 @@ with tabs[1]:
         st.markdown('<div class="trade-card">', unsafe_allow_html=True)
         st.subheader("Trade Notifications")
         user = st.session_state.get("username", "")
-        user_id = get_user_id(user) if user else 0
-        user_notifications = get_trade_notifications(user_id)
+        if user:
+            user_id = get_user_id(user)
+            user_notifications = get_trade_notifications(user_id)
 
-        if user_notifications:
-            for notification in user_notifications:
-                with st.expander(f"Offer from {notification['requestor']} for Trade {notification['trade_id']}"):
-                    st.markdown('<div class="trade-box">', unsafe_allow_html=True)
-                    st.write(f"Items Offered: {', '.join(notification['items_offered'])}")
-                    if notification["value"]:
-                        st.write(f"Value: {notification['value']:,.2f} Sheckles")
-                    if notification["description"]:
-                        st.write(f"Description: {notification['description']}")
-                    st.write(f"Items Wanted: {', '.join(notification['items_wanted'])}")
-                    st.write(f"Offer Message: {notification['offer_message']}")
-                    st.write(f"Received: {notification['timestamp']}")
-                    st.markdown('</div>', unsafe_allow_html=True)
+            if user_notifications:
+                for notification in user_notifications:
+                    with st.expander(f"Offer from {notification['requestor']} for Trade {notification['trade_id']}"):
+                        st.markdown('<div class="trade-box">', unsafe_allow_html=True)
+                        st.write(f"**Trade ID**: {notification['trade_id']}")
+                        st.write(f"**Items Offered**: {', '.join(notification['items_offered'])}")
+                        if notification["value"]:
+                            st.write(f"**Value**: {notification['value']:,.2f} Sheckles")
+                        if notification["description"]:
+                            st.write(f"**Description**: {notification['description']}")
+                        st.write(f"**Items Wanted**: {', '.join(notification['items_wanted'])}")
+                        st.write(f"**Offer Message**: {notification['offer_message']}")
+                        st.write(f"**Received**: {notification['timestamp']}")
+                        st.markdown('</div>', unsafe_allow_html=True)
 
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        if st.button("Accept", key=f"accept_notification_{notification['notification_id']}"):
-                            conn = sqlite3.connect("garden_trading.db")
-                            c = conn.cursor()
-                            c.execute('''INSERT INTO trade_chats (trade_id, user_id, message, timestamp)
-                                         VALUES (?, ?, ?, ?)''',
-                                      (notification["trade_id"], get_user_id(notification["requestor"]),
-                                       f"{notification['requestor']}: {notification['offer_message']}",
-                                       notification["timestamp"]))
-                            c.execute("DELETE FROM trade_notifications WHERE notification_id = ?",
-                                      (notification["notification_id"],))
-                            conn.commit()
-                            conn.close()
-                            st.markdown(f'<div class="success-box">Trade request accepted! Chat opened in Trading Chat.</div>', unsafe_allow_html=True)
-                            st.rerun()
-                    with col2:
-                        if st.button("Reject", key=f"reject_notification_{notification['notification_id']}"):
-                            conn = sqlite3.connect("garden_trading.db")
-                            c = conn.cursor()
-                            c.execute("DELETE FROM trade_notifications WHERE notification_id = ?",
-                                      (notification["notification_id"],))
-                            conn.commit()
-                            conn.close()
-                            st.markdown(f'<div class="success-box">Trade request rejected.</div>', unsafe_allow_html=True)
-                            st.rerun()
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            if st.button("Accept", key=f"accept_notification_{notification['notification_id']}"):
+                                conn = sqlite3.connect("garden_trading.db")
+                                c = conn.cursor()
+                                c.execute('''INSERT INTO trade_chats (trade_id, user_id, message, timestamp)
+                                             VALUES (?, ?, ?, ?)''',
+                                          (notification["trade_id"], get_user_id(notification["requestor"]),
+                                           f"{notification['requestor']}: {notification['offer_message']}",
+                                           notification["timestamp"]))
+                                c.execute("DELETE FROM trade_notifications WHERE notification_id = ?",
+                                          (notification["notification_id"],))
+                                conn.commit()
+                                conn.close()
+                                st.markdown(f'<div class="success-box">Trade request accepted! Chat opened in Trading Chat for Trade {notification["trade_id"]}.</div>', unsafe_allow_html=True)
+                                st.rerun()
+                        with col2:
+                            if st.button("Reject", key=f"reject_notification_{notification['notification_id']}"):
+                                conn = sqlite3.connect("garden_trading.db")
+                                c = conn.cursor()
+                                c.execute("DELETE FROM trade_notifications WHERE notification_id = ?",
+                                          (notification["notification_id"],))
+                                conn.commit()
+                                conn.close()
+                                st.markdown(f'<div class="success-box">Trade request rejected.</div>', unsafe_allow_html=True)
+                                st.rerun()
+            else:
+                st.write("No trade notifications available.")
         else:
-            st.write("No trade notifications.")
+            st.markdown('<div class="error-box">Please enter a username in the Create Trade tab to view notifications.</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
     with tabs_trade[3]:
@@ -1032,7 +1040,6 @@ with tabs[2]:
     st.title("🧘 Grow a Garden AI Assistant")
     st.markdown("Chat with our Gemini AI assistant for gameplay tips, motivational support, or a fun AI partner experience!")
     
-    # Configure Gemini AI
     GOOGLE_API_KEY = "AIzaSyAsut5nuxR7w-LrfqhMePB3Q26n3jmtixc"  # Replace with actual Gemini API key
     genai.configure(api_key=GOOGLE_API_KEY)
     model = genai.GenerativeModel('gemini-2.5-flash')
@@ -1062,7 +1069,7 @@ with tabs[2]:
     prompt = st.text_input("Type your message here...", value=st.session_state.chat_input.get("ai_assistant", ""), key="chat_input_field")
     if st.button("Send Message", key="send_message"):
         if prompt:
-            st.session_state.chat_input["ai_assistant"] = ""  # Clear input
+            st.session_state.chat_input["ai_assistant"] = ""
             st.session_state.chat_histories[mode].append({
                 "role": "user",
                 "content": prompt,
@@ -1083,7 +1090,7 @@ with tabs[2]:
                         f"Use a soft, encouraging tone, focusing on mental well-being, goal-setting, and overcoming challenges. "
                         f"Respond to: {prompt}"
                     )
-                else:  # AI Partner
+                else:
                     personality = st.session_state.selected_personality
                     gender = st.session_state.selected_gender
                     personality_prompts = {
