@@ -403,6 +403,10 @@ def clear_notification(poster, offer_id):
     save_trades()  # Save after clearing notification
 
 def save_trades():
+    # Ensure the file is created if it doesn't exist
+    if not os.path.exists("trades.txt"):
+        with open("trades.txt", "w") as f:
+            pass  # Create empty file
     with open("trades.txt", "w") as f:
         for trade_id, trade in st.session_state.trades.items():
             f.write(json.dumps({"trade_id": trade_id, **trade}) + "\n")
@@ -427,6 +431,10 @@ def load_trades():
                 if "offers" in trade and trade["offers"]:
                     all_offer_ids.extend([int(k) for k in trade["offers"].keys() if k.isdigit()])
             st.session_state.offer_counter = max(all_offer_ids, default=-1) + 1
+    else:
+        st.session_state.trades = {}
+        st.session_state.trade_counter = 0
+        st.session_state.offer_counter = 0
 
 def clear_trades():
     st.session_state.trades.clear()

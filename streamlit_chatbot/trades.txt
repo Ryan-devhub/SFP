@@ -1,0 +1,3 @@
+{"trade_id": 0, "poster": "TraderAlice", "items": ["Sword"], "value": 10, "description": "Selling a good sword", "wanted_items": ["Shield"], "offers": {}, "status": "open"}
+{"trade_id": 1, "poster": "TraderBob", "items": ["Shield"], "value": 15, "description": "Offering a sturdy shield", "wanted_items": ["Potion"], "offers": {}, "status": "open"}
+{"trade_id": 2, "poster": "ryan", "items": ["Sword"], "value": 1.0, "description": "aea", "wanted_items": ["Amulet"], "offers": {}, "status": "open"}
