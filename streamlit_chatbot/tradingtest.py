@@ -122,6 +122,25 @@ st.markdown(
         padding: 20px;
         box-shadow: 2px 0 5px rgba(0,0,0,0.1);
         overflow-y: auto;
+        transition: transform 0.3s ease-in-out;
+    }
+    .sidebar.collapsed {
+        transform: translateX(-250px);
+    }
+    .sidebar-toggle {
+        position: absolute;
+        top: 10px;
+        right: -40px;
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        border-radius: 0 5px 5px 0;
+        padding: 5px 10px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+    .sidebar-toggle:hover {
+        background-color: #45a049;
     }
     .sidebar h3 {
         color: #2c3e50;
@@ -132,7 +151,7 @@ st.markdown(
     <script>
     function toggleSidebar() {
         const sidebar = document.querySelector('.sidebar');
-        sidebar.classList.toggle('active');
+        sidebar.classList.toggle('collapsed');
     }
     </script>
     """,
@@ -302,6 +321,8 @@ if 'chat_history' not in st.session_state:
     st.session_state.chat_history = []
 if 'trade_notifications' not in st.session_state:
     st.session_state.trade_notifications = {}
+if 'sidebar_collapsed' not in st.session_state:
+    st.session_state.sidebar_collapsed = False
 
 # Configure Gemini API
 GOOGLE_API_KEY = "AIzaSyAsut5nuxR7w-LrfqhMePB3Q26n3jmtixc"  # Replace with your API key
@@ -545,8 +566,10 @@ def trading_ads_tab():
             st.markdown('</div>', unsafe_allow_html=True)
 
     # Sidebar for trade notifications
-    st.markdown('<div class="sidebar">', unsafe_allow_html=True)
+    sidebar_class = "sidebar" if not st.session_state.sidebar_collapsed else "sidebar collapsed"
+    st.markdown(f'<div class="{sidebar_class}">', unsafe_allow_html=True)
     st.markdown('<h3>Trade Notifications</h3>', unsafe_allow_html=True)
+    st.markdown('<button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>', unsafe_allow_html=True)
     user_notifications = st.session_state.trade_notifications.get(st.session_state.user_id, {})
     for trade_id, offerer_username in user_notifications.items():
         post = next((p for p in st.session_state.trade_posts if p["trade_id"] == trade_id), None)
