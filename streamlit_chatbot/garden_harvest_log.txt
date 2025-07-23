@@ -1,0 +1,165 @@
+
+Harvest Log - 2025-07-22 03:24:13
+-----------------------------------
+Banana: 5.00 kg, Mutations: Golden, Large
+Total Value: 640.00 sheckles
+-----------------------------------
+
+Harvest Log - 2025-07-22 03:25:07
+-----------------------------------
+Banana: 5.00 kg, Mutations: Golden, Large
+Apple: 5.00 kg, Mutations: Golden, Large
+Total Value: 1440.00 sheckles
+-----------------------------------
+
+Harvest Log - 2025-07-22 04:38:58
+-----------------------------------
+Mango: 24.00 kg, Mutations: Golden, Large, Juicy
+Total Value: 8601.60 sheckles
+-----------------------------------
+
+Harvest Log - 2025-07-22 04:50:32
+-----------------------------------
+Orange: 2.00 kg, Mutations: Golden, Large
+Total Value: 384.00 sheckles
+-----------------------------------
+
+Harvest Log - 2025-07-22 04:59:19
+-----------------------------------
+Moon Melon: 50.10 kg, Mutations: Burnt, Wiltproof, Plasma, Verdant, Bloodlit, Pollinated
+Total Value: 3414816000.00 sheckles
+-----------------------------------
+
+Harvest Log - 2025-07-22 05:05:21
+-----------------------------------
+Moon Melon: 50.10 kg, Mutations: Burnt, Wiltproof, Plasma, Verdant, Bloodlit, Pollinated
+Total Value: 3414816000.00 sheckles
+-----------------------------------
+
+Harvest Log - 2025-07-22 05:13:16
+-----------------------------------
+Moon Melon: 50.10 kg, Mutations: Burnt, Wiltproof, Plasma, Verdant, Bloodlit, Pollinated
+Total Value: 3414816000.00 sheckles
+-----------------------------------
+
+Harvest Log - 2025-07-22 05:16:03
+-----------------------------------
+Moon Melon: 50.10 kg, Mutations: Burnt, Wiltproof, Plasma, Verdant, Bloodlit, Pollinated
+Total Value: 3414816000.00 sheckles
+-----------------------------------
+
+Harvest Log - 2025-07-22 05:18:55
+-----------------------------------
+Moon Melon: 50.10 kg, Mutations: Burnt, Wiltproof, Plasma, Verdant, Bloodlit, Pollinated
+Carrot: 50.10 kg, Mutations: Plasma, Verdant, Bloodlit, Pollinated
+Total Value: 3415080528.00 sheckles
+-----------------------------------
+
+Harvest Log - 2025-07-22 05:22:51
+-----------------------------------
+Nightshade: 50.10 kg, Mutations: Plasma, Verdant, Bloodlit, Pollinated
+Total Value: 27655200.00 sheckles
+-----------------------------------
+
+Harvest Log - 2025-07-22 05:23:01
+-----------------------------------
+Nightshade: 50.10 kg, Mutations: Plasma, Verdant, Bloodlit, Pollinated
+Total Value: 27655200.00 sheckles
+-----------------------------------
+
+Harvest Log - 2025-07-22 05:23:57
+-----------------------------------
+Nightshade: 50.10 kg, Mutations: Plasma, Verdant, Bloodlit, Pollinated
+Carrot: 1.00 kg, Mutations: Plasma, Verdant, Bloodlit, Pollinated
+Candy Blossom: 23.40 kg, Mutations: Wet, Chilled, Choc, Moonlit, Windstruck, Pollinated, Sandy, Bloodlit, Verdant, HoneyGlazed, Twisted
+Total Value: 268075296960.00 sheckles
+-----------------------------------
+
+Harvest Log - 2025-07-22 05:26:09
+-----------------------------------
+Moon Blossom: 23.90 kg, Mutations: Wet, Chilled, Choc, Moonlit, Windstruck, Pollinated, Sandy, Bloodlit, Burnt, Verdant, Wiltproof, Drenched, Plasma, HoneyGlazed, Heavenly, Twisted, Cloudtouched, Clay, Fried, Frozen, Cooked, Amber
+Total Value: 58933407743999991808.00 sheckles
+-----------------------------------
+
+Harvest Log - 2025-07-22 05:30:13
+-----------------------------------
+Moon Blossom: 23.90 kg, Mutations: Wet, Chilled, Choc, Moonlit, Windstruck, Pollinated, Sandy, Bloodlit, Burnt, Verdant, Wiltproof, Drenched, Plasma, HoneyGlazed, Heavenly, Twisted, Cloudtouched, Clay, Fried, Frozen, Cooked, Amber
+Total Value: 134288364.00 sheckles
+-----------------------------------
+
+Harvest Log - 2025-07-22 05:35:13
+-----------------------------------
+Moon Blossom: 23.90 kg, Mutations: Wet, Chilled, Choc, Moonlit, Windstruck, Pollinated, Sandy, Bloodlit, Burnt, Verdant, Wiltproof, Drenched, Plasma, HoneyGlazed, Heavenly, Twisted, Cloudtouched, Clay, Fried, Frozen, Cooked, Amber
+Total Value: 134288364.00 sheckles
+-----------------------------------
+
+Harvest Log - 2025-07-22 05:35:26
+-----------------------------------
+Moon Blossom: 23.90 kg, Mutations: Wet, Chilled, Choc, Moonlit, Windstruck, Pollinated, Sandy, Bloodlit, Burnt, Verdant, Wiltproof, Drenched, Plasma, HoneyGlazed, Heavenly, Twisted, Cloudtouched, Clay, Fried, Frozen, Cooked, Amber
+Total Value: 134288364.00 sheckles
+-----------------------------------
+
+Harvest Log - 2025-07-22 05:35:38
+-----------------------------------
+Moon Blossom: 23.90 kg, Mutations: Wet, Chilled, Choc, Moonlit, Windstruck, Pollinated, Sandy, Bloodlit, Burnt, Verdant, Wiltproof, Drenched, Plasma, HoneyGlazed, Heavenly, Twisted, Cloudtouched, Clay, Fried, Frozen, Cooked, Amber
+Total Value: 134288364.00 sheckles
+-----------------------------------
+
+Harvest Log - 2025-07-22 05:35:56
+-----------------------------------
+Carrot: 23.90 kg, Mutations: Wet, Chilled, Choc, Moonlit, Windstruck, Pollinated, Sandy, Bloodlit, Burnt, Verdant, Wiltproof, Drenched, Plasma, HoneyGlazed, Heavenly, Twisted, Cloudtouched, Clay, Fried, Frozen, Cooked, Amber, Voidtouched, Shocked, Paradisal
+Total Value: 231352.00 sheckles
+-----------------------------------
+
+Harvest Log - 2025-07-22 05:36:15
+-----------------------------------
+Carrot: 23.90 kg, Mutations: Wet, Chilled, Choc, Moonlit, Windstruck, Pollinated, Sandy, Bloodlit, Burnt, Verdant, Wiltproof, Drenched, Plasma, HoneyGlazed, Heavenly, Twisted, Cloudtouched, Clay, Fried, Frozen, Cooked, Amber, Voidtouched, Shocked, Paradisal
+Moon Blossom: 23.90 kg, Mutations: Wet, Chilled, Choc, Moonlit, Windstruck, Pollinated, Sandy, Bloodlit, Burnt, Verdant, Wiltproof, Drenched, Plasma, HoneyGlazed, Heavenly, Twisted, Cloudtouched, Clay, Fried, Frozen, Cooked, Amber, Voidtouched, Shocked, Paradisal
+Total Value: 562963544.00 sheckles
+-----------------------------------
+
+Harvest Log - 2025-07-22 05:51:50
+-----------------------------------
+Sugar Apple: 12.59 kg, Mutations: Windstruck
+Total Value: 1090797.60 sheckles
+-----------------------------------
+
+Harvest Log - 2025-07-22 08:22:34
+-----------------------------------
+Tomato: 0.60 kg, Mutations: Wet, Chilled, Choc, Moonlit, Windstruck, Pollinated, Sandy, Verdant, Drenched, Heavenly
+Total Value: 630.00 sheckles
+-----------------------------------
+
+Harvest Log - 2025-07-22 08:36:17
+-----------------------------------
+Durian: 16.70 kg, Mutations: Sundried, Infected, Aurora, Alienlike, Wet, Chilled, Choc, Pollinated, Bloodlit, Burnt, Sandy, Wiltproof, Golden, Friend Boost: 0%
+Total Value: 32313397.80 sheckles
+-----------------------------------
+
+Harvest Log - 2025-07-22 08:52:10
+-----------------------------------
+Moon Melon: 36.40 kg, Mutations: Heavenly, Molten, Sundried, Chilled, Choc, Moonlit, Windstruck, Pollinated, Sandy, Bloodlit, Burnt, Verdant, Wiltproof, Golden, Friend Boost: 0%
+Total Value: 106606500.00 sheckles
+Average Total Multiplier: 165.00x
+-----------------------------------
+
+Harvest Log - 2025-07-22 08:56:54
+-----------------------------------
+Carrot: 8.00 kg, Mutations: None, None, Friend Boost: 0%
+Total Value: 0.00 sheckles
+Average Total Multiplier: 0.00x
+-----------------------------------
+
+Harvest Log - 2025-07-22 08:57:06
+-----------------------------------
+Carrot: 8.00 kg, Mutations: None, None, Friend Boost: 0%
+Total Value: 0.00 sheckles
+Average Total Multiplier: 0.00x
+-----------------------------------
+
+Harvest Log - 2025-07-23 02:15:27
+-----------------------------------
+Carrot: 8.00 kg, Mutations: None, None, Friend Boost: 0%
+Total Value: 176.00 sheckles
+Average Total Multiplier: 1.00x
+-----------------------------------
