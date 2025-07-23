@@ -516,30 +516,35 @@ def get_trade_notifications(user_id):
         st.markdown(f'<div class="error-box">Database error fetching notifications: {str(e)}</div>', unsafe_allow_html=True)
         return []
 
-def get_trade_history():
-    conn = sqlite3.connect("garden_trading.db")
-    c = conn.cursor()
-    c.execute('''SELECT h.history_id, h.trade_id, up.username, ur.username,
-                 h.items_offered, h.value, h.description, h.items_wanted, h.timestamp
-                 FROM trade_history h
-                 JOIN users up ON h.poster_id = up.user_id
-                 JOIN users ur ON h.requestor_id = ur.user_id''')
-    history = [
-        {
-            "history_id": row[0],
-            "trade_id": row[1],
-            "poster": row[2],
-            "requestor": row[3],
-            "items_offered": row[4].split(","),
-            "value": row[5],
-            "description": row[6],
-            "items_wanted": row[7].split(","),
-            "timestamp": row[8]
-        }
-        for row in c.fetchall()
-    ]
-    conn.close()
-    return history
+def get_trade_history(user_id):
+    try:
+        conn = sqlite3.connect("garden_trading.db")
+        c = conn.cursor()
+        c.execute('''SELECT h.history_id, h.trade_id, up.username, ur.username,
+                     h.items_offered, h.value, h.description, h.items_wanted, h.timestamp
+                     FROM trade_history h
+                     JOIN users up ON h.poster_id = up.user_id
+                     JOIN users ur ON h.requestor_id = ur.user_id
+                     WHERE h.poster_id = ? OR h.requestor_id = ?''', (user_id, user_id))
+        history = [
+            {
+                "history_id": row[0],
+                "trade_id": row[1],
+                "poster": row[2],
+                "requestor": row[3],
+                "items_offered": row[4].split(","),
+                "value": row[5],
+                "description": row[6],
+                "items_wanted": row[7].split(","),
+                "timestamp": row[8]
+            }
+            for row in c.fetchall()
+        ]
+        conn.close()
+        return history
+    except sqlite3.Error as e:
+        st.markdown(f'<div class="error-box">Database error fetching trade history: {str(e)}</div>', unsafe_allow_html=True)
+        return []
 
 def get_trade_chats(trade_id, user_id):
     try:
@@ -580,6 +585,28 @@ with st.sidebar:
         with sidebar_tabs[0]:
             st.markdown('<div class="chat-card">', unsafe_allow_html=True)
             st.subheader("Active Chats")
+            if st.button("Clear Ended Chats", key="clear_ended_chats"):
+                user = st.session_state.get("username", "")
+                if user:
+                    user_id = get_user_id(user)
+                    conn = sqlite3.connect("garden_trading.db")
+                    c = conn.cursor()
+                    c.execute('''DELETE FROM trade_chats
+                                 WHERE trade_id IN (
+                                     SELECT trade_id FROM trade_chats
+                                     WHERE is_accepted = 1 OR is_declined = 1
+                                     GROUP BY trade_id
+                                     HAVING COUNT(DISTINCT user_id) >= 2
+                                 ) AND (trade_id IN (
+                                     SELECT trade_id FROM trade_posts WHERE user_id = ?
+                                 ) OR user_id = ?)''', (user_id, user_id))
+                    conn.commit()
+                    conn.close()
+                    st.markdown('<div class="success-box">All ended chats cleared!</div>', unsafe_allow_html=True)
+                    st.rerun()
+                else:
+                    st.markdown('<div class="error-box">Please enter a username to clear chats.</div>', unsafe_allow_html=True)
+            
             user = st.session_state.get("username", "")
             if user:
                 user_id = get_user_id(user)
@@ -596,49 +623,60 @@ with st.sidebar:
                     for trade_id in trade_ids:
                         chats = get_trade_chats(trade_id, user_id)
                         if chats and not chats[0]["is_declined"]:
-                            with st.expander(f"Chat for Trade {trade_id}"):
-                                for message in chats:
-                                    role = "user" if message["username"] == user else "other"
-                                    st.markdown(f'<div class="chat-message {role}">{message["message"]}<br><small>{message["timestamp"]}</small></div>', unsafe_allow_html=True)
-                                if not chats[0]["is_accepted"]:
+                            with st.expander(f"Chat for Trade {trade_id}", expanded=True):
+                                chat_container = st.container()
+                                with chat_container:
+                                    for message in chats:
+                                        role = "user" if message["username"] == user else "other"
+                                        st.markdown(f'<div class="chat-message {role}">{message["message"]}<br><small>{message["timestamp"]}</small></div>', unsafe_allow_html=True)
+                                if chats[0]["is_accepted"]:
+                                    st.markdown('<div class="success-box">Trade completed!</div>', unsafe_allow_html=True)
+                                elif not chats[0]["is_declined"]:
                                     col1, col2 = st.columns(2)
                                     with col1:
                                         if st.button("Accept", key=f"accept_chat_{trade_id}"):
                                             conn = sqlite3.connect("garden_trading.db")
                                             c = conn.cursor()
-                                            c.execute("SELECT COUNT(DISTINCT user_id) FROM trade_chats WHERE trade_id = ? AND is_accepted = 0", (trade_id,))
-                                            accept_count = c.fetchone()[0]
-                                            c.execute("SELECT user_id FROM trade_chats WHERE trade_id = ?", (trade_id,))
-                                            accepted_users = [row[0] for row in c.fetchall()]
-                                            if user_id not in accepted_users:
-                                                accept_count += 1
+                                            c.execute("SELECT user_id FROM trade_chats WHERE trade_id = ? AND is_accepted = 0", (trade_id,))
+                                            existing_users = {row[0] for row in c.fetchall()}
+                                            if user_id not in existing_users:
                                                 c.execute("INSERT INTO trade_chats (trade_id, user_id, message, timestamp) VALUES (?, ?, ?, ?)",
                                                           (trade_id, user_id, f"{user}: Accepted trade", datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+                                                existing_users.add(user_id)
+                                            c.execute("SELECT COUNT(DISTINCT user_id) FROM trade_chats WHERE trade_id = ? AND message LIKE '%Accepted trade'", (trade_id,))
+                                            accept_count = c.fetchone()[0]
                                             if accept_count >= 2:
                                                 c.execute("UPDATE trade_chats SET is_accepted = 1 WHERE trade_id = ?", (trade_id,))
                                                 c.execute("UPDATE trade_posts SET is_active = 0 WHERE trade_id = ?", (trade_id,))
                                                 c.execute("SELECT user_id, items_offered, value, description, items_wanted FROM trade_posts WHERE trade_id = ?", (trade_id,))
                                                 trade = c.fetchone()
                                                 poster_id = trade[0]
-                                                requestor_id = next(u for u in accepted_users if u != poster_id)
+                                                c.execute("SELECT user_id FROM trade_chats WHERE trade_id = ? AND user_id != ?", (trade_id, poster_id))
+                                                requestor_id = c.fetchone()[0]
                                                 c.execute('''INSERT INTO trade_history (trade_id, poster_id, requestor_id, items_offered, value, description, items_wanted, timestamp)
                                                              VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
                                                           (trade_id, poster_id, requestor_id, trade[1], trade[2], trade[3], trade[4],
                                                            datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
                                                 c.execute("DELETE FROM trade_notifications WHERE trade_id = ?", (trade_id,))
+                                                st.markdown(f'<div class="success-box">Trade {trade_id} completed and recorded!</div>', unsafe_allow_html=True)
+                                            else:
+                                                st.markdown(f'<div class="success-box">Trade {trade_id} accepted by you! Waiting for other user.</div>', unsafe_allow_html=True)
                                             conn.commit()
                                             conn.close()
-                                            st.markdown(f'<div class="success-box">Trade {trade_id} {"completed and recorded!" if accept_count >= 2 else "accepted by you!"}</div>', unsafe_allow_html=True)
                                             st.rerun()
                                     with col2:
                                         if st.button("Decline", key=f"decline_chat_{trade_id}"):
                                             conn = sqlite3.connect("garden_trading.db")
                                             c = conn.cursor()
                                             c.execute("UPDATE trade_chats SET is_declined = 1 WHERE trade_id = ?", (trade_id,))
+                                            c.execute("INSERT INTO trade_chats (trade_id, user_id, message, timestamp) VALUES (?, ?, ?, ?)",
+                                                      (trade_id, user_id, f"{user}: Declined trade", datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
                                             conn.commit()
                                             conn.close()
-                                            st.markdown(f'<div class="error-box">Chat for Trade {trade_id} declined.</div>', unsafe_allow_html=True)
+                                            st.markdown(f'<div class="error-box">Trade {trade_id} cancelled.</div>', unsafe_allow_html=True)
                                             st.rerun()
+                                else:
+                                    st.markdown(f'<div class="error-box">Trade {trade_id} cancelled.</div>', unsafe_allow_html=True)
                                 if not chats[0]["is_accepted"] and not chats[0]["is_declined"]:
                                     chat_input = st.text_input("Type your message...", key=f"chat_input_{trade_id}")
                                     if st.button("Send", key=f"send_chat_{trade_id}"):
@@ -988,23 +1026,19 @@ with tabs[1]:
                             if st.button("Accept", key=f"accept_notification_{notification['notification_id']}"):
                                 conn = sqlite3.connect("garden_trading.db")
                                 c = conn.cursor()
-                                # Insert initial messages for both poster and requestor
                                 c.execute("SELECT user_id FROM trade_posts WHERE trade_id = ?", (notification["trade_id"],))
                                 poster_id = c.fetchone()[0]
                                 requestor_id = get_user_id(notification["requestor"])
-                                # Poster’s acceptance message
                                 c.execute('''INSERT INTO trade_chats (trade_id, user_id, message, timestamp)
                                              VALUES (?, ?, ?, ?)''',
                                           (notification["trade_id"], poster_id,
                                            f"{user}: Accepted your offer for Trade {notification['trade_id']}",
                                            datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-                                # Requestor’s original offer message
                                 c.execute('''INSERT INTO trade_chats (trade_id, user_id, message, timestamp)
                                              VALUES (?, ?, ?, ?)''',
                                           (notification["trade_id"], requestor_id,
                                            f"{notification['requestor']}: {notification['offer_message']}",
                                            notification["timestamp"]))
-                                # Delete the notification
                                 c.execute("DELETE FROM trade_notifications WHERE notification_id = ?",
                                           (notification["notification_id"],))
                                 conn.commit()
@@ -1030,27 +1064,47 @@ with tabs[1]:
     with tabs_trade[3]:
         st.markdown('<div class="trade-card">', unsafe_allow_html=True)
         st.subheader("Trade History")
-        trade_history = get_trade_history()
-        if trade_history:
-            for trade in trade_history:
-                with st.expander(f"Trade {trade['trade_id']} with {trade['requestor']}"):
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        st.markdown('<div class="trade-box">', unsafe_allow_html=True)
-                        st.write(f"**Posted by {trade['poster']}**")
-                        st.write(f"Items Offered: {', '.join(trade['items_offered'])}")
-                        if trade["value"]:
-                            st.write(f"Value: {trade['value']:,.2f} Sheckles")
-                        if trade["description"]:
-                            st.write(f"Description: {trade['description']}")
-                        st.markdown('</div>', unsafe_allow_html=True)
-                    with col2:
-                        st.markdown('<div class="trade-box">', unsafe_allow_html=True)
-                        st.write(f"**Offered by {trade['requestor']}**")
-                        st.write(f"Items Given: {', '.join(trade['items_wanted'])}")
-                        st.markdown('</div>', unsafe_allow_html=True)
+        if st.button("Clear Trade History", key="clear_trade_history"):
+            user = st.session_state.get("username", "")
+            if user:
+                user_id = get_user_id(user)
+                conn = sqlite3.connect("garden_trading.db")
+                c = conn.cursor()
+                c.execute("DELETE FROM trade_history WHERE poster_id = ? OR requestor_id = ?", (user_id, user_id))
+                conn.commit()
+                conn.close()
+                st.markdown('<div class="success-box">Trade history cleared!</div>', unsafe_allow_html=True)
+                st.rerun()
+            else:
+                st.markdown('<div class="error-box">Please enter a username to clear trade history.</div>', unsafe_allow_html=True)
+        
+        user = st.session_state.get("username", "")
+        if user:
+            user_id = get_user_id(user)
+            trade_history = get_trade_history(user_id)
+            if trade_history:
+                for trade in trade_history:
+                    with st.expander(f"Trade {trade['trade_id']} with {trade['requestor']}"):
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            st.markdown('<div class="trade-box">', unsafe_allow_html=True)
+                            st.write(f"**Posted by {trade['poster']}**")
+                            st.write(f"Items Offered: {', '.join(trade['items_offered'])}")
+                            if trade["value"]:
+                                st.write(f"Value: {trade['value']:,.2f} Sheckles")
+                            if trade["description"]:
+                                st.write(f"Description: {trade['description']}")
+                            st.markdown('</div>', unsafe_allow_html=True)
+                        with col2:
+                            st.markdown('<div class="trade-box">', unsafe_allow_html=True)
+                            st.write(f"**Offered by {trade['requestor']}**")
+                            st.write(f"Items Given: {', '.join(trade['items_wanted'])}")
+                            st.write(f"Completed: {trade['timestamp']}")
+                            st.markdown('</div>', unsafe_allow_html=True)
+            else:
+                st.write("No trade history.")
         else:
-            st.write("No trade history.")
+            st.write("Enter a username to view trade history.")
         st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown('</div>', unsafe_allow_html=True)

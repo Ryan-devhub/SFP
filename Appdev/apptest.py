@@ -541,30 +541,36 @@ def get_trade_history():
     conn.close()
     return history
 
-def get_trade_chats(trade_id):
-    conn = sqlite3.connect("garden_trading.db")
-    c = conn.cursor()
-    c.execute('''SELECT c.chat_id, c.trade_id, u.username, c.message, c.timestamp,
-                 c.is_accepted, c.is_declined
-                 FROM trade_chats c
-                 JOIN users u ON c.user_id = u.user_id
-                 WHERE c.trade_id = ?''', (trade_id,))
-    chats = [
-        {
-            "chat_id": row[0],
-            "trade_id": row[1],
-            "username": row[2],
-            "message": row[3],
-            "timestamp": row[4],
-            "is_accepted": row[5],
-            "is_declined": row[6]
-        }
-        for row in c.fetchall()
-    ]
-    conn.close()
-    return chats
+def get_trade_chats(trade_id, user_id):
+    try:
+        conn = sqlite3.connect("garden_trading.db")
+        c = conn.cursor()
+        c.execute('''SELECT c.chat_id, c.trade_id, u.username, c.message, c.timestamp,
+                     c.is_accepted, c.is_declined
+                     FROM trade_chats c
+                     JOIN users u ON c.user_id = u.user_id
+                     JOIN trade_posts tp ON c.trade_id = tp.trade_id
+                     WHERE c.trade_id = ? AND (tp.user_id = ? OR c.user_id = ?)
+                     ORDER BY c.timestamp''', (trade_id, user_id, user_id))
+        chats = [
+            {
+                "chat_id": row[0],
+                "trade_id": row[1],
+                "username": row[2],
+                "message": row[3],
+                "timestamp": row[4],
+                "is_accepted": row[5],
+                "is_declined": row[6]
+            }
+            for row in c.fetchall()
+        ]
+        conn.close()
+        return chats
+    except sqlite3.Error as e:
+        st.markdown(f'<div class="error-box">Database error fetching chats: {str(e)}</div>', unsafe_allow_html=True)
+        return []
 
-# Sidebar (unchanged)
+# Sidebar
 with st.sidebar:
     st.markdown("<h2 style='text-align: center; color: #ffffff; text-shadow: 1px 1px 3px rgba(0,0,0,0.2);'>Garden Toolshed</h2>", unsafe_allow_html=True)
     if st.button("Toggle Toolshed"):
@@ -579,13 +585,16 @@ with st.sidebar:
                 user_id = get_user_id(user)
                 conn = sqlite3.connect("garden_trading.db")
                 c = conn.cursor()
-                c.execute('''SELECT DISTINCT trade_id FROM trade_chats WHERE is_declined = 0''')
+                c.execute('''SELECT DISTINCT c.trade_id
+                             FROM trade_chats c
+                             JOIN trade_posts tp ON c.trade_id = tp.trade_id
+                             WHERE c.is_declined = 0 AND (tp.user_id = ? OR c.user_id = ?)''', (user_id, user_id))
                 trade_ids = [row[0] for row in c.fetchall()]
                 conn.close()
 
                 if trade_ids:
                     for trade_id in trade_ids:
-                        chats = get_trade_chats(trade_id)
+                        chats = get_trade_chats(trade_id, user_id)
                         if chats and not chats[0]["is_declined"]:
                             with st.expander(f"Chat for Trade {trade_id}"):
                                 for message in chats:
@@ -597,7 +606,7 @@ with st.sidebar:
                                         if st.button("Accept", key=f"accept_chat_{trade_id}"):
                                             conn = sqlite3.connect("garden_trading.db")
                                             c = conn.cursor()
-                                            c.execute("SELECT COUNT(DISTINCT user_id) FROM trade_chats WHERE trade_id = ?", (trade_id,))
+                                            c.execute("SELECT COUNT(DISTINCT user_id) FROM trade_chats WHERE trade_id = ? AND is_accepted = 0", (trade_id,))
                                             accept_count = c.fetchone()[0]
                                             c.execute("SELECT user_id FROM trade_chats WHERE trade_id = ?", (trade_id,))
                                             accepted_users = [row[0] for row in c.fetchall()]
@@ -979,11 +988,23 @@ with tabs[1]:
                             if st.button("Accept", key=f"accept_notification_{notification['notification_id']}"):
                                 conn = sqlite3.connect("garden_trading.db")
                                 c = conn.cursor()
+                                # Insert initial messages for both poster and requestor
+                                c.execute("SELECT user_id FROM trade_posts WHERE trade_id = ?", (notification["trade_id"],))
+                                poster_id = c.fetchone()[0]
+                                requestor_id = get_user_id(notification["requestor"])
+                                # Poster’s acceptance message
                                 c.execute('''INSERT INTO trade_chats (trade_id, user_id, message, timestamp)
                                              VALUES (?, ?, ?, ?)''',
-                                          (notification["trade_id"], get_user_id(notification["requestor"]),
+                                          (notification["trade_id"], poster_id,
+                                           f"{user}: Accepted your offer for Trade {notification['trade_id']}",
+                                           datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+                                # Requestor’s original offer message
+                                c.execute('''INSERT INTO trade_chats (trade_id, user_id, message, timestamp)
+                                             VALUES (?, ?, ?, ?)''',
+                                          (notification["trade_id"], requestor_id,
                                            f"{notification['requestor']}: {notification['offer_message']}",
                                            notification["timestamp"]))
+                                # Delete the notification
                                 c.execute("DELETE FROM trade_notifications WHERE notification_id = ?",
                                           (notification["notification_id"],))
                                 conn.commit()
