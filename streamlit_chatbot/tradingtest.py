@@ -428,6 +428,14 @@ def load_trades():
                     all_offer_ids.extend([int(k) for k in trade["offers"].keys() if k.isdigit()])
             st.session_state.offer_counter = max(all_offer_ids, default=-1) + 1
 
+def clear_trades():
+    st.session_state.trades.clear()
+    st.session_state.trade_counter = 0
+    st.session_state.offer_counter = 0
+    save_trades()
+    st.success("All trades have been cleared!")
+    st.rerun()
+
 # Load trades on startup
 load_trades()
 
@@ -623,6 +631,8 @@ def trading_ads_tab():
     # ----------- TRADES FEED TAB -----------
     with tabs[1]:
         st.header("Trades Feed")
+        if st.button("Clear Trades", key="clear_trades"):
+            clear_trades()
 
         trades = st.session_state.trades
 
