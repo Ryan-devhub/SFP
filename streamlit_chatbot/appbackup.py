@@ -283,7 +283,7 @@ if 'chat_history' not in st.session_state:
 # Configure Gemini API
 GOOGLE_API_KEY = "AIzaSyAsut5nuxR7w-LrfqhMePB3Q26n3jmtixc"  # Replace with your API key
 genai.configure(api_key=GOOGLE_API_KEY)
-model = genai.GenerativeModel('gemini-1.5-flash')
+model = genai.GenerativeModel('gemini-2.5-flash')
 
 # Value Calculator Tab
 def value_calculator_tab():

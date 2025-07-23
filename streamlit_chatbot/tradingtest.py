@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import google.generativeai as genai
+import json
+import os
 
 # Page config with blurred farm background
 st.set_page_config(page_title="Grow a Garden App", layout="wide")
@@ -438,11 +440,19 @@ def value_calculator_tab():
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-# Trading Ads Tab with username
+# Trading Ads Tab with username and persistent storage
 def trading_ads_tab():
     st.markdown('<div class="main">', unsafe_allow_html=True)
     st.title("🤝 Trading Ads")
     st.markdown("Post items you want to trade and find what you're looking for!")
+
+    # Load existing trade posts from file
+    trade_posts_file = "trade_posts.json"
+    if os.path.exists(trade_posts_file):
+        with open(trade_posts_file, "r") as f:
+            st.session_state.trade_posts = json.load(f)
+    else:
+        st.session_state.trade_posts = []
 
     # Form to post a trade
     st.subheader("📝 Create a Trade Post")
@@ -465,7 +475,7 @@ def trading_ads_tab():
                 st.error("Please enter a username and select at least one item to trade and one item desired.")
             else:
                 trade_id = len(st.session_state.trade_posts)
-                st.session_state.trade_posts.append({
+                new_post = {
                     "trade_id": trade_id,
                     "user_id": st.session_state.user_id,
                     "username": username,
@@ -475,10 +485,13 @@ def trading_ads_tab():
                     "want_value": want_value if want_value > 0 else None,
                     "description": description if description else None,
                     "status": "open"
-                })
+                }
+                st.session_state.trade_posts.append(new_post)
+                with open(trade_posts_file, "w") as f:
+                    json.dump(st.session_state.trade_posts, f)
                 st.success("Trade posted successfully!")
 
-    # Display trade posts
+    # Display all trade posts
     st.subheader("📬 Available Trades")
     for post in st.session_state.trade_posts:
         if post["status"] == "open":
@@ -525,16 +538,24 @@ def trading_ads_tab():
                 with col2:
                     if st.form_submit_button("Accept Offer"):
                         post["status"] = "accepted"
+                        with open(trade_posts_file, "w") as f:
+                            json.dump(st.session_state.trade_posts, f)
                         st.session_state.active_chat = None
                         st.success("Trade accepted!")
                         st.rerun()
                 with col3:
                     if st.form_submit_button("Reject Offer"):
                         post["status"] = "rejected"
+                        with open(trade_posts_file, "w") as f:
+                            json.dump(st.session_state.trade_posts, f)
                         st.session_state.active_chat = None
                         st.error("Trade rejected.")
                         st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
+
+    # Save trade posts to file on session end or change
+    with open(trade_posts_file, "w") as f:
+        json.dump(st.session_state.trade_posts, f)
 
     st.markdown('</div>', unsafe_allow_html=True)
 
