@@ -5,7 +5,7 @@ import os
 import random
 import time
 import google.generativeai as genai
-import sqlite3  # Added for database
+import sqlite3
 
 # Set page configuration
 st.set_page_config(
@@ -172,7 +172,7 @@ st.markdown("""
         background-color: rgba(200, 230, 201, 0.9);
         padding: 10px;
         border-radius: 8px;
-        color: #2e7d32;
+        color: «color»;
         margin-top: 10px;
     }
     .error-box {
@@ -341,7 +341,7 @@ trade_items = [
 # Flower types (unchanged)
 flower_types = ["🌸 Rose", "🌼 Daisy", "🌺 Tulip"]
 
-# Initialize session state (removed trade-related variables)
+# Initialize session state (unchanged)
 if 'sidebar_open' not in st.session_state:
     st.session_state.sidebar_open = True
 if 'recent_searches' not in st.session_state:
@@ -386,7 +386,7 @@ if 'game_state' not in st.session_state:
 if 'leaderboard' not in st.session_state:
     st.session_state.leaderboard = []
 
-# Database initialization
+# Database initialization (unchanged)
 def init_db():
     conn = sqlite3.connect("garden_trading.db")
     c = conn.cursor()
@@ -564,7 +564,7 @@ def get_trade_chats(trade_id):
     conn.close()
     return chats
 
-# Sidebar (updated Trading Chat section)
+# Sidebar (unchanged)
 with st.sidebar:
     st.markdown("<h2 style='text-align: center; color: #ffffff; text-shadow: 1px 1px 3px rgba(0,0,0,0.2);'>Garden Toolshed</h2>", unsafe_allow_html=True)
     if st.button("Toggle Toolshed"):
@@ -849,7 +849,7 @@ with tabs[0]:
     
     st.markdown('</div>', unsafe_allow_html=True)
 
-# Trading Ads Tab (updated with SQLite)
+# Trading Ads Tab
 with tabs[1]:
     st.markdown('<div class="main">', unsafe_allow_html=True)
     st.title("📬 Grow a Garden Trading Ads")
@@ -951,7 +951,7 @@ with tabs[1]:
             st.write("No trade posts available.")
         st.markdown('</div>', unsafe_allow_html=True)
 
-with tabs_trade[2]:
+    with tabs_trade[2]:
         st.markdown('<div class="trade-card">', unsafe_allow_html=True)
         st.subheader("Trade Notifications")
         user = st.session_state.get("username", "")
@@ -979,13 +979,11 @@ with tabs_trade[2]:
                             if st.button("Accept", key=f"accept_notification_{notification['notification_id']}"):
                                 conn = sqlite3.connect("garden_trading.db")
                                 c = conn.cursor()
-                                # Insert initial offer message into trade_chats
                                 c.execute('''INSERT INTO trade_chats (trade_id, user_id, message, timestamp)
                                              VALUES (?, ?, ?, ?)''',
                                           (notification["trade_id"], get_user_id(notification["requestor"]),
                                            f"{notification['requestor']}: {notification['offer_message']}",
                                            notification["timestamp"]))
-                                # Delete the notification after accepting
                                 c.execute("DELETE FROM trade_notifications WHERE notification_id = ?",
                                           (notification["notification_id"],))
                                 conn.commit()
@@ -1042,7 +1040,6 @@ with tabs[2]:
     st.title("🧘 Grow a Garden AI Assistant")
     st.markdown("Chat with our Gemini AI assistant for gameplay tips, motivational support, or a fun AI partner experience!")
     
-    # Configure Gemini AI
     GOOGLE_API_KEY = "AIzaSyAsut5nuxR7w-LrfqhMePB3Q26n3jmtixc"  # Replace with actual Gemini API key
     genai.configure(api_key=GOOGLE_API_KEY)
     model = genai.GenerativeModel('gemini-2.5-flash')
@@ -1072,7 +1069,7 @@ with tabs[2]:
     prompt = st.text_input("Type your message here...", value=st.session_state.chat_input.get("ai_assistant", ""), key="chat_input_field")
     if st.button("Send Message", key="send_message"):
         if prompt:
-            st.session_state.chat_input["ai_assistant"] = ""  # Clear input
+            st.session_state.chat_input["ai_assistant"] = ""
             st.session_state.chat_histories[mode].append({
                 "role": "user",
                 "content": prompt,
@@ -1093,7 +1090,7 @@ with tabs[2]:
                         f"Use a soft, encouraging tone, focusing on mental well-being, goal-setting, and overcoming challenges. "
                         f"Respond to: {prompt}"
                     )
-                else:  # AI Partner
+                else:
                     personality = st.session_state.selected_personality
                     gender = st.session_state.selected_gender
                     personality_prompts = {
