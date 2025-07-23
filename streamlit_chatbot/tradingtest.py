@@ -569,20 +569,20 @@ def trading_ads_tab():
     with tabs[0]:
         st.header("Post a Trade")
 
-        trade_items = st.multiselect("Select item(s) you want to trade", trade_items, key="trade_items")
+        selected_trade_items = st.multiselect("Select item(s) you want to trade", trade_items, key="trade_items")
         trade_value = st.number_input("Value (number)", min_value=0.0, step=1.0, key="trade_value")
         trade_description = st.text_area("Description", key="trade_description")
         wanted_items = st.multiselect("Item(s) you want in exchange", trade_items, key="wanted_items")
 
         if st.button("Post Trade"):
-            if not trade_items:
+            if not selected_trade_items:
                 st.error("Please select at least one item to trade.")
             elif trade_value <= 0:
                 st.error("Please enter a value greater than 0.")
             elif not wanted_items:
                 st.error("Please select at least one item you want in exchange.")
             else:
-                trade_id = add_trade(current_user, trade_items, trade_value, trade_description, wanted_items)
+                trade_id = add_trade(current_user, selected_trade_items, trade_value, trade_description, wanted_items)
                 st.success(f"Trade posted successfully! Trade ID: {trade_id}")
 
                 # Clear inputs by rerunning:
